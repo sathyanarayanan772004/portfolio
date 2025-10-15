@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { Mail, Phone, MapPin, Send, Github, CheckCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Github, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -10,6 +10,7 @@ export default function Contact() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -32,14 +33,39 @@ export default function Contact() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_key: 'YOUR_WEB3FORMS_ACCESS_KEY',
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          subject: `Portfolio Contact: Message from ${formData.name}`,
+          from_name: 'Portfolio Contact Form',
+          to_email: '727822tuad047@skct.edu.in'
+        }),
+      });
 
-    setIsSubmitting(false);
-    setIsSuccess(true);
-    setFormData({ name: '', email: '', message: '' });
+      const result = await response.json();
 
-    setTimeout(() => setIsSuccess(false), 3000);
+      if (result.success) {
+        setIsSuccess(true);
+        setFormData({ name: '', email: '', message: '' });
+        setTimeout(() => setIsSuccess(false), 5000);
+      } else {
+        setError('Failed to send message. Please try again or email directly.');
+      }
+    } catch (err) {
+      setError('Failed to send message. Please try again or email directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -155,6 +181,13 @@ export default function Contact() {
                   className="w-full px-4 py-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
                 ></textarea>
               </div>
+
+              {error && (
+                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-3 text-red-400">
+                  <AlertCircle size={20} />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
 
               <button
                 type="submit"
